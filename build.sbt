@@ -8,5 +8,10 @@ lazy val root = project
 
     scalaVersion := scala3Version,
 
-    libraryDependencies += "org.scalameta" %% "munit" % "1.3.2" % Test
+    libraryDependencies ++= Seq(
+      "org.scalameta" %% "munit" % "1.3.2" % Test,
+      "org.rogach" %% "scallop" % "6.0.0",
+      "ch.qos.logback" % "logback-classic" % "1.5.18",   // full-featured, configurable via logback.xml
+      "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6"
+    )
   )
