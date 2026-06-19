@@ -1,7 +1,6 @@
 import com.typesafe.scalalogging.StrictLogging
-import org.rogach.scallop.{ScallopConf, ScallopOption, Subcommand, intConverter, stringConverter}
+import org.rogach.scallop._
 
-import java.nio.file.Paths
 
 class ReceiveConf extends Subcommand("receive") {
   val dir: ScallopOption[String] = opt[String](required = true)
@@ -31,9 +30,12 @@ object Main extends StrictLogging{
     conf.subcommand match {
       case Some(conf.receive) =>
         val dirA = conf.receive.dir()
+        logger.info("Starting receiver....")
         Receiver.run(dirA, port = conf.receive.port())
-        logger.info("receive")
-      case Some(conf.send) => println("send")
+      case Some(conf.send) =>
+        val dirB = conf.receive.dir()
+        logger.info("Starting sender....")
+        Sender.run(dirB,  host = conf.send.host(), port = conf.receive.port())
       case _ => println("no subcommand")
     }
   }
