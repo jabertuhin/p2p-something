@@ -189,6 +189,25 @@ Phased breakdown. Each phase is a meaningful milestone: working software, clear 
 
 ---
 
+## Parked optimization — transfer efficiency (revisit later)
+
+**Problem:** as of Phase 1, every `ENTRY_MODIFY` event re-sends the *entire* file (`Files.readAllBytes` → one `Frame`). A one-byte edit to a 1 GB file re-sends 1 GB, the whole file is buffered in memory on both ends, and editor save patterns fire multiple modify events so a single logical edit can be sent several times.
+
+**What the roadmap already covers (whole-file granularity):**
+- Phase 4's `content_hash` enables skip-if-unchanged — don't send a file whose hash matches what the peer has.
+- Phase 6 anti-entropy sends only the *operations* a peer is missing, "without re-sending unchanged files."
+
+**What is NOT yet planned (sub-file granularity):** sending only the *changed bytes within* a changed file. Worth a dedicated investigation once the CRDT core (Phase 4–6) is stable. Study how production sync services handle this and decide what fits our whole-file LWW-Register model (mechanisms below verified against the cited sources, 2026-06):
+
+- **rsync algorithm** — the *receiver* splits its existing copy into fixed-size blocks and sends a (weak rolling Adler-32, strong hash) pair per block; the sender rolls the weak checksum byte-by-byte over its version, confirms weak matches with the strong hash, and transmits only the unmatched literal regions plus references to matched blocks. The classic receiver-drives baseline. (MD4 originally; MD5 since protocol v30 / rsync 3.0.0.) — Tridgell & Mackerras, "The rsync algorithm" (TR-CS-96-05): https://rsync.samba.org/tech_report/
+- **Dropbox** — fixed-size **4 MB** blocks (last block smaller), **not** content-defined chunking. Each block is content-addressed by its **SHA-256** and stored as an immutable, deduplicated blob; a file is the ordered list of block hashes, so a save re-uploads only the blocks whose hash changed. — https://dropbox.tech/infrastructure/inside-lan-sync and content-hash spec https://www.dropbox.com/developers/reference/content-hash *(Note: many third-party "system design" posts wrongly attribute content-defined chunking to Dropbox — it's fixed 4 MB.)*
+- **Google Drive** — **not** block-level delta. Changing content replaces the whole file (PATCH/PUT to the `fileId`, creating a new revision); resumable uploads may split the stream into 256 KB-multiple chunks purely for transfer reliability, not to diff changed bytes. The cleanest "whole-file replace" contrast for our note. — https://developers.google.com/workspace/drive/api/guides/manage-uploads
+- **Syncthing** (our north star) — Block Exchange Protocol v1. Files split into blocks (variable **128 KiB–16 MiB**, power-of-two, constant within a file). Devices exchange an **Index** of per-block hashes, build a global model (newest version via version vectors), then **pull** only missing/stale blocks via **Request** messages (one block each, with expected hash). A request can be satisfied locally by copying any existing block with the same hash (block reuse), avoiding the network entirely. Closest design to what we'd build. — https://docs.syncthing.net/specs/bep-v1.html
+
+**Open question for us:** sub-file deltas complicate the merge — our CRDT treats a file as one LWW-Register, so block-level sync is a *transport* optimization that must stay invisible to the merge layer. Decide whether the complexity is worth it for a learning project or whether content-hash skip (Phase 4) is "good enough."
+
+---
+
 ## Rough timeline
 
 If you do 1–2 phases per month (realistic with kids, work, and the rest of your curriculum), this is a **6–9 month project**. Don't promise yourself faster — promise yourself it's okay to stop after Phase 5 if life gets in the way. Phase 4 + 5 alone is a complete, defensible learning project.
