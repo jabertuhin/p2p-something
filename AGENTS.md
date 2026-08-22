@@ -1,41 +1,38 @@
 # AGENTS.md
 
-This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
+Guidance for Codex and any other coding agent working in this repository.
 
-## What this project is
+> **Read [`CLAUDE.md`](CLAUDE.md) — all of it applies here too.** It is the single source of guidance
+> for agents in this repo: current phase status, the docs map, hard design constraints, and commands.
+> This file used to duplicate that content and drifted out of date by two phases, so it no longer
+> does. The essentials are repeated below; anything more detailed lives there.
 
-A peer-to-peer file synchronization tool built **from scratch as a learning project** (a tiny Syncthing). The point is to implement every layer by hand — CRDTs, vector clocks, SWIM gossip, NAT traversal, Noise-encrypted transport — not to ship production software or reuse off-the-shelf sync libraries.
+## The one rule that matters most
 
-The codebase is currently at **Phase 0 (scaffolding)**: the only domain code is a placeholder `Main.scala` using scallop for CLI args and one trivial munit test. The real design lives in `docs/`, which is the most important context in this repo:
+**The author writes the domain code. Your job is to guide.** This is a learning project. Handing over
+a finished implementation destroys the point of it — the value is in the author hitting the loopback
+bug, the LWW edge case, and the CRDT merge law personally.
 
-- `docs/01-overview.md` — goals, explicit non-goals, success criteria.
-- `docs/02-plan.md` — the 10-phase roadmap. **This is the source of truth for what to build next.** Each phase has a "Done when" criterion; find the last completed phase and read its section to know where work stands.
-- `docs/03-resources.md` — curated reading per phase (papers, reference implementations).
-- `docs/04-implementation-notes.md` — cross-cutting technical decisions (concurrency model, library choices). Read before picking up coding.
+- **Do:** explain the design space, recommend an approach with rationale, sketch signatures and types
+  in prose, flag traps before they're hit, review code after it's written, answer "why does X happen".
+- **Don't:** write or edit files under `src/` unprompted.
+- **Docs are fair game** — `docs/`, `CLAUDE.md`, and this file can be edited directly.
+- Ask before writing code. An explicit "write this for me" overrides the default; "how do I…",
+  "next step?", and "guide me" do not.
 
-When implementing a feature, check which phase it belongs to in `docs/02-plan.md` and respect that phase's scope — the plan deliberately defers things (e.g. delete/rename until Phase 2, real CRDT merge until Phase 4) to keep each milestone small.
+## Hard constraints (don't violate these)
 
-## Hard constraints from the design (don't violate these)
-
-- **No consensus algorithms.** No Raft, no Paxos, no quorums. Convergence comes from CRDT math, not coordination. This is intentional.
+- **No consensus algorithms.** No Raft, no Paxos, no quorums. Convergence comes from CRDT math, not
+  coordination. This is intentional.
 - **Don't roll your own crypto.** Phase 8 uses a vetted Noise library (`noise-java` on the Scala path).
-- **Property-based testing is non-negotiable for the CRDT merge (Phase 4).** The merge function must be proven commutative, associative, and idempotent via property tests — not example tests.
-- Stack is fixed: **Scala 3 + (cats-effect or Pekko)**. Don't switch languages mid-project.
+- **Property-based testing is non-negotiable for the CRDT merge (Phase 4).** Commutative, associative,
+  idempotent — proven by property tests, not example tests.
+- **Stack is fixed:** Scala 3 + cats-effect. Don't switch languages mid-project.
+- **Conflict logic goes in a pure core; IO stays in a thin shell.**
 
-## Commands
+## Where to look
 
-```bash
-sbt compile        # compile
-sbt run            # run Main (currently requires --apples, a placeholder arg)
-sbt test           # run all tests
-sbt console        # Scala 3 REPL
-
-# Run a single test suite or test:
-sbt 'testOnly MySuite'
-sbt 'testOnly MySuite -- --tests=example'   # munit name filter
-```
-
-## Tech
-
-- Scala 3.8.4, sbt. Dependencies declared in `build.sbt`: munit (test), scallop (CLI parsing).
-- Sources under `src/main/scala`, tests under `src/test/scala`, mirroring standard sbt layout.
+- `docs/02-plan.md` — the 10-phase roadmap, with per-phase status markers. Source of truth for what
+  to build next.
+- `docs/phase-2/` — the active work: an index, a numbered decision log, and seven chunk files.
+- `docs/04-implementation-notes.md` — cross-cutting technical decisions.

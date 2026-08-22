@@ -6,7 +6,7 @@ Phased breakdown. Each phase is a meaningful milestone: working software, clear 
 
 ---
 
-## Phase 0 — Scaffolding (1 weekend)
+## Phase 0 — Scaffolding (1 weekend) — ✅ done
 
 **Goal:** working repo, build, test loop. No domain code yet.
 
@@ -23,7 +23,7 @@ Phased breakdown. Each phase is a meaningful milestone: working software, clear 
 
 ---
 
-## Phase 1 — Toy sync, local, unidirectional (1 weekend)
+## Phase 1 — Toy sync, local, unidirectional (1 weekend) — ⚠️ code written, not verified
 
 **Goal:** edit a file in directory A, see the bytes appear in directory B. Both processes on localhost.
 
@@ -36,7 +36,11 @@ Phased breakdown. Each phase is a meaningful milestone: working software, clear 
 
 **Done when:** `echo "hello" > dirA/test.txt` results in `dirA/test.txt` and `dirB/test.txt` having identical contents.
 
-**Learning:** filesystem watch APIs are weirder than they look (debouncing, atomic-write tricks editors use, partial reads). Write protocols are uglier than they look.
+**Learning:** filesystem watch APIs are weirder than they look (coalescing, atomic-write tricks editors use, partial reads). Write protocols are uglier than they look.
+
+> **Status:** `Sender`, `Receiver`, and `Protocol` exist, but the CLI's send branch reads the *receive* subcommand's options, so the documented demo cannot run, and no test covers any of it. Closing this out is [`phase-2/chunk-0-close-phase-1.md`](phase-2/chunk-0-close-phase-1.md).
+
+> **Correction (2026-08-11 review):** `Phase 2 — Bidirectional` also marks the point where Phase 1's status changes from "implemented" to "verified". Don't build symmetric sync on unverified one-way sync — you will not be able to tell a new bug from an old one.
 
 ---
 
@@ -55,6 +59,8 @@ Phased breakdown. Each phase is a meaningful milestone: working software, clear 
 
 **Learning:** the loopback problem (your own writes triggering re-broadcasts) is the first real distributed systems bug you'll hit. Wall clocks lie — even on the same machine if you're using mtime from disk.
 
+> **In progress.** Phase 2 is broken into seven implementable chunks in [`phase-2/`](phase-2/) — start at [`phase-2/README.md`](phase-2/README.md). Decisions are logged in [`phase-2/decisions.md`](phase-2/decisions.md). Chunk 0 closes out Phase 1, which a 2026-08-11 review found *implemented but not verified*.
+
 ---
 
 ## Phase 3 — Vector clocks and conflict detection (1 weekend)
@@ -72,6 +78,8 @@ Phased breakdown. Each phase is a meaningful milestone: working software, clear 
 
 **Learning:** this is the moment "happens-before" stops being a textbook concept. Vector clocks grow with the number of peers — note this; you'll care later.
 
+> **Correction (2026-08-11 review):** attach causality to a **path/version**, not to one process-wide clock. Compare an incoming clock against the stored clock *for that same path*. A single global clock per peer makes edits to unrelated files look concurrent, and you'll spend a weekend debugging phantom conflicts.
+
 ---
 
 ## Phase 4 — First CRDT: file-level LWW-Register with proper merge (1–2 weekends)
@@ -88,6 +96,8 @@ Phased breakdown. Each phase is a meaningful milestone: working software, clear 
 **Done when:** Property tests pass with 1000+ random scenarios. Concurrent edits resolve deterministically and predictably.
 
 **Learning:** *this is the heart of the project*. CRDTs feel like magic until you've written one. The property-based testing is non-negotiable — it's the only way to be confident your merge is actually associative.
+
+> **Correction (2026-08-11 review):** separate *convergence* from *conflict preservation*. An LWW-Register converges, but it silently discards one concurrent value — which directly contradicts success criterion 2 in [`01-overview.md`](01-overview.md) ("concurrent edits from both ends survive — no silent data loss, no last-writer-wins"). Keep the LWW-Register as the learning milestone, then add a second exercise: a small multi-value register, or conflict copies (`foo.txt` + `foo.sync-conflict-<peer>.txt`, as Syncthing does). Only the second one satisfies the stated goal.
 
 ---
 
@@ -121,6 +131,31 @@ Phased breakdown. Each phase is a meaningful milestone: working software, clear 
 
 **Learning:** anti-entropy is what makes eventual consistency *eventual* and not "hope-fully-consistent". It's also where most real bugs in production CRDT systems hide.
 
+> **Correction (2026-08-11 review):** Phases 5–6 as written mix two different models — a state-based CRDT (merge whole states) and an operation-delta protocol (ship the ops a peer is missing). Pick deliberately, and start with the simpler one: **full canonical manifest exchange plus state merge**. Both peers send "here is every path with its version", diff, and pull. It's O(files) per reconnect and obviously correct. Only add addressable operations `(originNodeId, counter)` afterwards, if op deltas still look worth the bookkeeping.
+
+---
+
+## Phase 6B — Merkle reconciliation (1 weekend, optional)
+
+**Goal:** stop sending the full manifest on every reconnect.
+
+**Stories:**
+- Build a Merkle tree over the path→version manifest.
+- On reconnect, exchange root hashes; descend only into subtrees that differ.
+- Keep the Phase 6 full-manifest implementation as the correctness oracle — run both, assert they agree.
+
+**Done when:** two peers with 10,000 identical files and one difference reconcile by exchanging a handful of hashes instead of the whole manifest.
+
+**Learning:** this is the trick behind Dynamo, Cassandra, and every anti-entropy repair you'll ever read about. It is also where "my hash tree says we agree but we don't" bugs live — hence the oracle.
+
+---
+
+## Phase 6C — Block-level transfer (optional, revisit)
+
+Sub-file deltas: send only the changed bytes of a changed file. See **Parked optimization** at the bottom of this file for the full survey (rsync, Dropbox, Syncthing BEP).
+
+**Sequencing note:** try fixed-size blocks first, then compare against rsync's rolling checksum. Chunking must sit strictly *below* file-version merge semantics — it changes how content travels, not which version wins. If it starts leaking into the merge, back it out.
+
 ---
 
 ## Phase 7 — Multi-peer support and gossip discovery (2 weekends)
@@ -137,6 +172,8 @@ Phased breakdown. Each phase is a meaningful milestone: working software, clear 
 **Done when:** Start node E knowing only node A's address; within 30 seconds E knows about B, C, D and starts syncing with them.
 
 **Learning:** failure detection is harder than it looks (false positives are inevitable; the suspicion state buys you tolerance). Gossip is probabilistic — embrace it.
+
+> **Correction (2026-08-11 review):** separate *replication* from *membership*. First prove replication works across **three statically configured peers** — that alone breaks assumptions baked in by two-peer code (the single socket of Phase 2 decision 6, for one). Only then add SWIM. Also note what SWIM does *not* do: it detects failures and disseminates membership, it does **not** discover the first bootstrap peer. That address still has to come from config or the command line.
 
 ---
 
@@ -171,6 +208,11 @@ Phased breakdown. Each phase is a meaningful milestone: working software, clear 
 **Done when:** Your home machine in Dhaka and a friend's machine in another country sync directly, no relay. Verify the path with `tcpdump` showing peer-to-peer traffic.
 
 **Learning:** **this is the most networking you will ever learn in one project.** NAT types, ICE candidates, the actual on-the-wire reality of consumer internet. Read Tailscale's "How NAT traversal works" blog before starting this phase.
+
+> **Correction (2026-08-11 review):** this phase bundles two independent hard problems — treat them separately or you will not know which one is failing.
+>
+> 1. **NAT traversal.** UDP is not required for every form of hole punching; TCP hole punching exists and simultaneous-open works through some NATs. Do the rendezvous + address-discovery experiments first and find out what your actual NAT does.
+> 2. **Reliable transport.** If you *do* move to UDP, note that Noise provides confidentiality, integrity, and authentication — it provides **no** ordering, retransmission, congestion control, or fragmentation. Everything TCP was giving you for free becomes yours to build. Make "do we need reliable UDP, or can we keep TCP?" an explicit, separate decision rather than a consequence of choosing hole punching.
 
 ---
 
