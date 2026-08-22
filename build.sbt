@@ -9,9 +9,20 @@ lazy val root = project
     scalaVersion := scala3Version,
 
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "munit" % "1.3.2" % Test,
       "org.rogach" %% "scallop" % "6.0.0",
       "ch.qos.logback" % "logback-classic" % "1.5.18",   // full-featured, configurable via logback.xml
-      "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6"
+      "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
+
+      // Phase 2: native FSEvents on macOS + recursive watch. Note: this gives hash-based
+      // duplicate suppression, NOT a time-window debounce — see docs/04-implementation-notes.md.
+      "io.methvin" %% "directory-watcher-better-files" % "0.19.0",
+
+      // Phase 2 concurrency: IOApp, Queue (cats-effect-std), Stream. fs2-core is enough —
+      // socket and file I/O stay blocking inside IO.blocking, so fs2-io is not needed yet.
+      "org.typelevel" %% "cats-effect" % "3.7.0",
+      "co.fs2" %% "fs2-core" % "3.13.0",
+
+      "org.scalameta" %% "munit" % "1.3.2" % Test,
+      "org.typelevel" %% "munit-cats-effect" % "2.2.0" % Test   // assert on IO-returning code
     )
   )
