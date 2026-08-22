@@ -1,7 +1,22 @@
 # Chunk 0 — Close Phase 1
 
+**Status:** 🚧 in progress — claimed 2026-08-23.
 **Depends on:** nothing. **Unblocks:** chunk 2.
 **Size:** an evening.
+
+## Progress
+
+- [ ] Fix the CLI send branch to read the send subcommand's own `dir`, `host`, `port`
+- [ ] Run the README two-terminal demo by hand and confirm a file transfers
+- [ ] Make `Sender`'s error handling report the exception instead of swallowing it
+- [ ] Give `logger.info("")` something to say
+- [ ] Write the transfer test: top-level ASCII file, byte-identical
+- [ ] Test: zero-byte file arrives zero-byte
+- [ ] Test: non-ASCII filename arrives intact
+- [ ] Test: modifying an existing file propagates the new content
+- [ ] Update `README.md`'s architecture diagram, usage section, and dependency list if this
+      chunk's changes made them stale
+- [ ] Answer the "Question to sit with" below, in writing
 
 ## Why this chunk exists
 

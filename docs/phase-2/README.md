@@ -4,19 +4,22 @@
 self-contained unit of spec + implementation guidance + test criteria, sized to be picked up and
 finished without holding the rest in your head.
 
-| # | Chunk | What you learn | Depends on |
-|---|---|---|---|
-| — | **Setup** — ✅ done 2026-08-23 | deps added and compiling; see [`../04-implementation-notes.md`](../04-implementation-notes.md) | — |
-| 0 | [Close Phase 1](chunk-0-close-phase-1.md) | Why "it compiles" and "it works" are unrelated claims | — |
-| 1 | [Characterize the watcher](chunk-1-watcher-characterization.md) | What filesystems actually tell you, vs. what you assumed | — |
-| 2 | [The wire model](chunk-2-wire-model.md) | Designing a protocol as data, and parsing hostile input | 0 |
-| 3 | [Symmetry without conflict resolution](chunk-3-symmetry.md) | Two concurrent loops, one socket, cats-effect for real | 2 |
-| 4 | [Reproduce and fix loopback](chunk-4-loopback.md) | Your first genuine distributed-systems bug | 1, 3 |
-| 5 | [Last-writer-wins and deletes](chunk-5-lww-deletes.md) | Why a total order makes coordination unnecessary | 4 |
-| 6 | [Acceptance](chunk-6-acceptance.md) | Proving convergence instead of asserting it | 5 |
+| # | Chunk | Status | What you learn | Depends on |
+|---|---|---|---|---|
+| — | **Setup** | ✅ done 2026-08-23 | deps added and compiling; see [`../04-implementation-notes.md`](../04-implementation-notes.md) | — |
+| 0 | [Close Phase 1](chunk-0-close-phase-1.md) | 🚧 **in progress** — claimed 2026-08-23 | Why "it compiles" and "it works" are unrelated claims | — |
+| 1 | [Characterize the watcher](chunk-1-watcher-characterization.md) | not started | What filesystems actually tell you, vs. what you assumed | — |
+| 2 | [The wire model](chunk-2-wire-model.md) | not started | Designing a protocol as data, and parsing hostile input | 0 |
+| 3 | [Symmetry without conflict resolution](chunk-3-symmetry.md) | not started | Two concurrent loops, one socket, cats-effect for real | 2 |
+| 4 | [Reproduce and fix loopback](chunk-4-loopback.md) | not started | Your first genuine distributed-systems bug | 1, 3 |
+| 5 | [Last-writer-wins and deletes](chunk-5-lww-deletes.md) | not started | Why a total order makes coordination unnecessary | 4 |
+| 6 | [Acceptance](chunk-6-acceptance.md) | not started | Proving convergence instead of asserting it | 5 |
 
 Chunks 0 and 1 are independent of everything else — do them in either order, or in parallel with
 reading. From chunk 2 onward the order is load-bearing.
+
+Update the Status column when you pick a chunk up and when you finish it. It's the "where did I
+leave off" signal after a break, and it's cheaper than reconstructing state from `git log`.
 
 Decisions that span chunks live in [`decisions.md`](decisions.md) and are cited by number
 (*decision 4*, *decision 7*, …). If you find yourself re-arguing one mid-implementation, that's a
