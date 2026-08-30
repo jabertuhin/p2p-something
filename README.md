@@ -2,6 +2,17 @@
 
 A peer-to-peer file synchronization system built from scratch as a Scala learning project.
 
+## Vision
+
+The destination is a private tool for synchronizing a chosen folder with a friend or with another
+machine such as an EC2 instance. Each machine is a peer: it can originate changes, reconnect after
+being offline, exchange what the other side missed, and eventually reach the same folder state.
+
+Peers should authenticate each other and encrypt file contents in transit. They should connect
+directly when possible; an always-available EC2 peer or a relay can help when two personal machines
+cannot reach each other. The system should handle concurrent edits and deletes predictably without
+depending on a central coordinator.
+
 ## Current state
 
 The implementation is a **one-way file-transfer prototype**, not yet a peer-to-peer synchronizer.
@@ -34,6 +45,29 @@ Known implementation issues:
 - Each transfer reads the complete file into memory and can observe a file while it is still changing.
 - The integration test waits five seconds, leaves temporary files behind, and relies on daemon
   threads instead of shutting the processes down.
+
+## Active milestone: trustworthy one-way LAN transfer
+
+This is the only active milestone. Run the sender and receiver on two machines on the same trusted
+local network, then transfer top-level file creates and modifications safely and repeatably.
+
+Implement it in this order:
+
+1. Fix the `send` CLI branch so it reads `send.dir`, `send.host`, and `send.port`. Replace the empty
+   transfer log and preserve exception causes.
+2. Add pure validation at the network boundary. A path resolver should accept a sync root and wire
+   path, then either return a confined target or a descriptive error. The protocol reader should
+   reject negative and over-limit content lengths before allocating memory.
+3. Give the sender and receiver an explicit shutdown lifecycle so tests can stop and join them.
+4. Replace the fixed test sleep with bounded polling or a completion signal. Clean temporary
+   directories and cover create, modify, zero-byte content, and a non-ASCII filename.
+5. Run the CLI on two machines using the receiver's LAN IP and record any firewall or binding issue
+   that appears.
+
+The milestone is complete when all automated cases pass without leaked resources and the manual LAN
+demo transfers the expected bytes. Unsafe paths and invalid frame sizes must fail without writing a
+file. Recursive watching, deletes, renames, bidirectional sync, discovery, NAT traversal, and
+encryption remain outside this milestone.
 
 ## How it works
 
