@@ -21,7 +21,9 @@ lazy val root = project
       "org.typelevel" %% "cats-effect" % "3.7.0",
       "co.fs2" %% "fs2-core" % "3.13.0",
 
-      "org.scalameta" %% "munit" % "1.3.2" % Test,
-      "org.typelevel" %% "munit-cats-effect" % "2.2.0" % Test   // assert on IO-returning code
+//      "org.scalameta" %% "munit" % "1.3.2" % Test,
+//      "org.typelevel" %% "munit-cats-effect" % "2.2.0" % Test,   // assert on IO-returning code
+      "org.scalatest" %% "scalatest-funsuite" % "3.2.20" % Test
+
     )
   )

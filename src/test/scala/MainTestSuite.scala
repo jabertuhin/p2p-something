@@ -1,9 +1,9 @@
-import munit.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import java.nio.file.Files
 import java.util.concurrent.{CompletableFuture, TimeUnit}
 
-class MainTestSuite extends FunSuite{
+class MainTestSuite extends AnyFunSuite{
   test("Full test"){
     val tempDirA = Files.createTempDirectory("dirA")
     val tempDirB = Files.createTempDirectory("dirB")
@@ -32,7 +32,7 @@ class MainTestSuite extends FunSuite{
     Thread.sleep(5000)
     val actualContent = Files.readString(tempDirA.resolve("helloworld.txt"))
 
-    assertEquals(actualContent, expectedContent)
+    assertResult(actualContent)(expectedContent)
   }
 
 }
