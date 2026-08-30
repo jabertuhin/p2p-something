@@ -1,81 +1,46 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## How to help
 
-## How to help here: guide, don't implement
+This is a learning project. The author writes the domain code; the agent guides the work.
 
-**The author writes the domain code. Claude's job is to guide.** This is a learning project, so handing over a finished implementation destroys the point of it — the value is in the author hitting the loopback bug, the LWW edge case, the CRDT merge law, and working it out.
+- Explain the design space and recommend one approach with reasons.
+- Sketch signatures and types in prose. Flag edge cases before implementation.
+- Review code after the author writes it and explain observed behavior.
+- Ask before editing files under `src/`. An explicit request to implement code grants permission.
+- Edit documentation directly when the user requests documentation changes.
 
-What that means in practice:
+## Sources of truth
 
-- **Do:** explain the design space, recommend an approach with rationale, sketch signatures/types in prose, flag the specific traps and edge cases before they're hit, review code after it's written, and answer "why does X happen".
-- **Don't:** write or edit files under `src/` unprompted. No full implementations, no "here's the file, paste it in".
-- **Docs are fair game** — `docs/`, `learnings.md`, and `CLAUDE.md` can be edited directly (plans,
-  decision logs, notes).
-- Ask before writing code. An explicit "write this for me" or "implement X" overrides the default; a "how do I…" / "next step?" / "guide me" does not.
-- When a step is genuinely mechanical boilerplate the author doesn't want to learn, offer it — don't assume it.
+- [`README.md`](README.md) describes the current implementation and known limitations.
+- `src/` is authoritative when documentation and behavior disagree.
+- [`learnings.md`](learnings.md) stores reusable concepts tied to repository code.
+
+There is no active phase plan. Base advice on the current code and the user's immediate goal.
+
+## Design guardrails
+
+- Use Scala 3 and cats-effect.
+- Keep conflict resolution in a pure core and IO in a thin shell.
+- Use CRDT convergence, not consensus algorithms or quorums.
+- Prove CRDT merge commutativity, associativity, and idempotence with property tests.
+- Use a vetted Noise implementation when transport encryption is introduced.
 
 ## Capture new learnings
 
-After explaining a reusable concept connected to this repository, ask the author whether to save it
-in `learnings.md`. If confirmed, add one brief, searchable entry with:
-
-- a specific topic heading and search terms;
-- the precise behavior, its purpose here, and essential caveats;
-- a link to the repository code that prompted the learning.
-
-Keep `learnings.md` organized by subject and update an existing entry instead of duplicating it.
-
-## What this project is
-
-A peer-to-peer file synchronization tool built **from scratch as a learning project** (a tiny Syncthing). The point is to implement every layer by hand — CRDTs, vector clocks, SWIM gossip, NAT traversal, Noise-encrypted transport — not to ship production software or reuse off-the-shelf sync libraries.
-
-## Where the project actually is
-
-- **Phase 0 (scaffolding)** — done.
-- **Phase 1 (one-way toy sync)** — code written, **barely verified**. `Sender`, `Receiver`, and `Protocol` exist. The CLI's send branch reads the *receive* subcommand's options (`Main.scala:36,38`) — a **latent** bug, not a fatal one: both subcommands declare `--dir`/`--port` identically, so scallop resolves the read off the shared builder and returns the right value by coincidence. One test covers the top-level ASCII transfer; the other three chunk-0 cases don't. Closing this out is chunk 0 of Phase 2.
-- **Phase 2 (symmetric sync, delete/rename, LWW)** — in progress. Dependency setup is done; implementation has not started.
-
-The real design lives in `docs/`, which is the most important context in this repo:
-
-- `docs/01-overview.md` — goals, explicit non-goals, success criteria.
-- `docs/02-plan.md` — the 10-phase roadmap. **This is the source of truth for what to build next.** Each phase has a "Done when" criterion and a status marker; corrections from the 2026-08-11 review are inlined per phase.
-- `docs/03-resources.md` — curated reading per phase (papers, reference implementations).
-- `docs/04-implementation-notes.md` — cross-cutting technical decisions (concurrency model, library choices, event coalescing). Read before picking up coding.
-- `docs/05-review-2026-08-11.md` — historical review of the pre-Phase-2 codebase. Superseded; kept for reference.
-- `docs/phase-2/` — **the active work.** `README.md` is the index; `decisions.md` holds numbered decisions cited throughout; `chunk-0` … `chunk-6` are the implementable units, each with spec, implementation guidance, and test criteria.
-
-When implementing a feature, check which phase it belongs to in `docs/02-plan.md` and respect that phase's scope — the plan deliberately defers things (e.g. real CRDT merge until Phase 4) to keep each milestone small. Within Phase 2, respect the chunk boundaries for the same reason: chunk 3 deliberately excludes the watcher so that chunk 4's loopback storm is unambiguous.
-
-## Hard constraints from the design (don't violate these)
-
-- **No consensus algorithms.** No Raft, no Paxos, no quorums. Convergence comes from CRDT math, not coordination. This is intentional.
-- **Don't roll your own crypto.** Phase 8 uses a vetted Noise library (`noise-java` on the Scala path).
-- **Property-based testing is non-negotiable for the CRDT merge (Phase 4).** The merge function must be proven commutative, associative, and idempotent via property tests — not example tests.
-- Stack is fixed: **Scala 3 + (cats-effect or Pekko)**. Don't switch languages mid-project.
-- **Conflict logic goes in a pure core; IO stays in a thin shell.** Phase 2 decisions 8, 10, and 11. Everything interesting is a pure-function test; if logic leaks into the socket or watch loops, the tests get slow and vague.
+After teaching a reusable concept connected to this repository, ask whether to save it in
+`learnings.md`. If confirmed, add one concise, searchable entry with the behavior, purpose,
+caveats, and a link to the relevant code. Update an existing entry instead of duplicating it.
 
 ## Commands
 
 ```bash
-sbt compile        # compile
-sbt test           # run all tests
-sbt console        # Scala 3 REPL
+sbt compile
+sbt test
+sbt console
 
-# Phase 1 demo (runs, but never verified end-to-end by hand — see docs/phase-2/chunk-0-close-phase-1.md).
-# Create dirA/ and dirB/ first; the sender fails with NoSuchFileException if its dir is missing:
 sbt 'run receive --dir dirB --port 9000'
 sbt 'run send --dir dirA --host localhost --port 9000'
-
-# Run a single test suite or test:
-sbt 'testOnly MySuite'
-sbt 'testOnly MySuite -- --tests=example'   # munit name filter
 ```
 
-`sbt` needs write access to `~/.sbt/boot`. Under a restrictive sandbox it fails with
-`sbt.boot.lock (Operation not permitted)` — that's the sandbox, not the build.
-
-## Tech
-
-- Scala 3.8.4, sbt. Sources under `src/main/scala`, tests under `src/test/scala`.
-- Dependencies in `build.sbt`: scallop (CLI), scala-logging + logback (logging), directory-watcher-better-files (native FSEvents, recursive watch), cats-effect + fs2-core (Phase 2 concurrency), munit + munit-cats-effect (test).
+`sbt` needs write access to `~/.sbt/boot`. A sandbox can otherwise fail on `sbt.boot.lock`.

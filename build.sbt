@@ -13,12 +13,11 @@ lazy val root = project
       "ch.qos.logback" % "logback-classic" % "1.5.18",   // full-featured, configurable via logback.xml
       "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
 
-      // Phase 2: native FSEvents on macOS + recursive watch. Note: this gives hash-based
-      // duplicate suppression, NOT a time-window debounce — see docs/04-implementation-notes.md.
+      // Recursive native filesystem watcher. util.Watcher is an experiment and is not wired into
+      // the current sender.
       "io.methvin" %% "directory-watcher-better-files" % "0.19.0",
 
-      // Phase 2 concurrency: IOApp, Queue (cats-effect-std), Stream. fs2-core is enough —
-      // socket and file I/O stay blocking inside IO.blocking, so fs2-io is not needed yet.
+      // Concurrency dependencies are installed but not used by the current blocking prototype.
       "org.typelevel" %% "cats-effect" % "3.7.0",
       "co.fs2" %% "fs2-core" % "3.13.0",
 

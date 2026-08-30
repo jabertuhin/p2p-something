@@ -1,18 +1,39 @@
 # p2p-something
 
-A peer-to-peer file synchronization tool, built **from scratch as a learning project** — a tiny Syncthing. The goal is to implement every layer by hand (CRDTs, vector clocks, SWIM gossip, NAT traversal, Noise-encrypted transport) rather than reuse off-the-shelf sync libraries.
+A peer-to-peer file synchronization system built from scratch as a Scala learning project.
 
-See [`docs/`](docs/) for the full design: [overview](docs/01-overview.md), the [10-phase plan](docs/02-plan.md), [resources](docs/03-resources.md), and [implementation notes](docs/04-implementation-notes.md). Phase 2 is being built in [`docs/phase-2/`](docs/phase-2/).
+## Current state
 
-## Status
+The implementation is a **one-way file-transfer prototype**, not yet a peer-to-peer synchronizer.
+One sender watches a local directory and sends file changes over plaintext TCP to one receiver.
+The receiver writes those files into its own directory.
 
-**Phase 1 — toy sync, local, unidirectional. Written, not verified.**
+The automated end-to-end test confirms one top-level ASCII file transfer. The full test suite
+passes, but the command-line demo has not been verified manually.
 
-One process watches a directory and streams changed files over plaintext TCP to another process, which writes them to its own directory. Handles **create** and **modify**; delete and rename are deferred to Phase 2. Sync is one-way only (sender → receiver) for now.
+Implemented:
 
-> ⚠️ **The demo below has never been verified end-to-end by hand.** It does start: the CLI's send branch reads the *receive* subcommand's options, but both subcommands declare `--dir` and `--port` identically, so scallop returns the right value anyway — a latent bug rather than a startup failure. Create `dirA/` and `dirB/` before running, or the sender dies with `NoSuchFileException`. Watching is top-level only — files in subdirectories are never picked up. Both are addressed in [chunk 0](docs/phase-2/chunk-0-close-phase-1.md) of Phase 2.
+- top-level file create and modify events;
+- one persistent sender-to-receiver TCP connection;
+- a length-prefixed frame containing relative path, modification time, and file bytes;
+- receiver-side directory creation, file writing, and modification-time restoration.
 
-Everything else from the roadmap — bidirectional sync, vector clocks, the CRDT merge, persistence, gossip discovery, encryption, NAT traversal — is still ahead. See [`docs/02-plan.md`](docs/02-plan.md) for what comes next.
+Not implemented:
+
+- bidirectional synchronization or peer symmetry;
+- startup scanning, nested-directory watching, delete, or rename propagation;
+- conflict detection, version metadata, convergence, or persistence;
+- reconnection, multiple peers, discovery, authentication, or encryption;
+- validation of incoming paths and frame sizes.
+
+Known implementation issues:
+
+- The `send` CLI branch reads `receive.dir` and `receive.port` instead of its own options.
+- `Sender` catches every exception, drops its cause, and logs an empty success message.
+- Both sides use blocking loops without an explicit shutdown lifecycle.
+- Each transfer reads the complete file into memory and can observe a file while it is still changing.
+- The integration test waits five seconds, leaves temporary files behind, and relies on daemon
+  threads instead of shutting the processes down.
 
 ## How it works
 
@@ -23,13 +44,17 @@ Everything else from the roadmap — bidirectional sync, vector clocks, the CRDT
                     WatchService)
 ```
 
-- **`Sender`** registers a `java.nio.file.WatchService` on the source directory for `ENTRY_CREATE` / `ENTRY_MODIFY` events. On each event it reads the file's bytes and last-modified time and pushes a frame down the socket.
-- **`Receiver`** runs a `ServerSocket`, accepts one connection, and for each incoming frame writes the bytes to the matching relative path (creating parent directories) and restores the modification time.
-- **`Protocol`** is the wire format: a `Frame(path, mtime, bytes)` serialized with `DataOutputStream` as `UTF path · long mtime · int length · raw bytes`.
+- **`Sender`** uses `java.nio.file.WatchService` for top-level create and modify events.
+- **`Receiver`** accepts one connection and writes each received frame under its target directory.
+- **`Protocol`** encodes `Frame(path, mtime, bytes)` with `DataOutputStream`.
+- **`util.Watcher`** is an unused recursive-watcher experiment.
 
 ## Usage
 
 Start the receiver first (it listens on a port), then point a sender at it.
+
+Create both directories before starting the processes. The current CLI option bug means the sender
+commands work only because both subcommands define `--dir` and `--port` with matching types.
 
 ```bash
 # Terminal 1 — listen and write incoming files into ./dirB
@@ -63,14 +88,17 @@ sbt 'testOnly MySuite -- --tests=example'   # munit name filter
 ## Tech
 
 - **Scala 3.8.4**, sbt.
-- Dependencies ([`build.sbt`](build.sbt)): [scallop](https://github.com/scallop/scallop) (CLI parsing), [scala-logging](https://github.com/lightbend-labs/scala-logging) + logback (logging), [directory-watcher](https://github.com/gmethvin/directory-watcher) (native FSEvents on macOS, recursive watch), [cats-effect](https://typelevel.org/cats-effect/) + [fs2](https://fs2.io/) (Phase 2 concurrency), [munit](https://scalameta.org/munit/) + munit-cats-effect (test).
+- Dependencies ([`build.sbt`](build.sbt)): Scallop, scala-logging with Logback,
+  directory-watcher-better-files, cats-effect, fs2-core, MUnit, and munit-cats-effect.
+- The production code does not yet use directory-watcher-better-files, cats-effect, or fs2.
 - Sources under `src/main/scala`, tests under `src/test/scala`.
 
 ## Design constraints
 
-These are intentional and shouldn't be violated as the project grows:
+These constraints remain intentional as the project grows:
 
-- **No consensus algorithms.** No Raft, no Paxos, no quorums — convergence comes from CRDT math.
-- **Don't roll your own crypto.** Phase 8 uses a vetted Noise library.
-- **Property-based testing is mandatory for the CRDT merge** (Phase 4): the merge must be proven commutative, associative, and idempotent.
-- Stack is fixed: **Scala 3 + (cats-effect or Pekko)**.
+- Use CRDT convergence rather than consensus algorithms or quorums.
+- Use a vetted Noise implementation instead of custom cryptography.
+- Verify CRDT merge commutativity, associativity, and idempotence with property tests.
+- Keep conflict resolution pure and isolate IO in a thin shell.
+- Keep the stack on Scala 3 and cats-effect.
