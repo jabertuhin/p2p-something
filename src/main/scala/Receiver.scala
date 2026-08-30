@@ -6,11 +6,16 @@ import java.nio.file.attribute.FileTime
 import java.nio.file.{Files, Paths}
 
 object Receiver extends StrictLogging:
-  def run(dir: String, port: Int): Unit =
+  def run(dir: String,
+          port: Int,
+          onListening: Int => Unit = _ => (),
+          onConnected:  () => Unit = () => ()): Unit =
     val directory = Paths.get(dir)
     val server = new ServerSocket(port)
+    onListening(server.getLocalPort)
 
     val socket = server.accept()
+    onConnected()
     val in = new DataInputStream(new BufferedInputStream(socket.getInputStream))
 
     try
