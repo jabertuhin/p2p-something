@@ -7,8 +7,8 @@ finished without holding the rest in your head.
 | # | Chunk | Status | What you learn | Depends on |
 |---|---|---|---|---|
 | — | **Setup** | ✅ done 2026-08-23 | deps added and compiling; see [`../04-implementation-notes.md`](../04-implementation-notes.md) | — |
-| 0 | [Close Phase 1](chunk-0-close-phase-1.md) | 🚧 **in progress** — claimed 2026-08-23 | Why "it compiles" and "it works" are unrelated claims | — |
-| 1 | [Characterize the watcher](chunk-1-watcher-characterization.md) | not started | What filesystems actually tell you, vs. what you assumed | — |
+| 0 | [Close Phase 1](chunk-0-close-phase-1.md) | 🚧 **in progress** — 1/10 done, 2026-08-29 | Why "it compiles" and "it works" are unrelated claims | — |
+| 1 | [Characterize the watcher](chunk-1-watcher-characterization.md) | 🚧 **in progress** — claimed 2026-08-29 | What filesystems actually tell you, vs. what you assumed | — |
 | 2 | [The wire model](chunk-2-wire-model.md) | not started | Designing a protocol as data, and parsing hostile input | 0 |
 | 3 | [Symmetry without conflict resolution](chunk-3-symmetry.md) | not started | Two concurrent loops, one socket, cats-effect for real | 2 |
 | 4 | [Reproduce and fix loopback](chunk-4-loopback.md) | not started | Your first genuine distributed-systems bug | 1, 3 |

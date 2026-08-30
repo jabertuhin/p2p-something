@@ -21,7 +21,7 @@ A peer-to-peer file synchronization tool built **from scratch as a learning proj
 ## Where the project actually is
 
 - **Phase 0 (scaffolding)** — done.
-- **Phase 1 (one-way toy sync)** — code written, **not verified**. `Sender`, `Receiver`, and `Protocol` exist, but the CLI's send branch reads the *receive* subcommand's options so the documented demo cannot run, and no test covers any sync behavior. Closing this out is chunk 0 of Phase 2.
+- **Phase 1 (one-way toy sync)** — code written, **barely verified**. `Sender`, `Receiver`, and `Protocol` exist. The CLI's send branch reads the *receive* subcommand's options (`Main.scala:36,38`) — a **latent** bug, not a fatal one: both subcommands declare `--dir`/`--port` identically, so scallop resolves the read off the shared builder and returns the right value by coincidence. One test covers the top-level ASCII transfer; the other three chunk-0 cases don't. Closing this out is chunk 0 of Phase 2.
 - **Phase 2 (symmetric sync, delete/rename, LWW)** — in progress. Dependency setup is done; implementation has not started.
 
 The real design lives in `docs/`, which is the most important context in this repo:
@@ -50,7 +50,8 @@ sbt compile        # compile
 sbt test           # run all tests
 sbt console        # Scala 3 REPL
 
-# Phase 1 demo (currently broken — see docs/phase-2/chunk-0-close-phase-1.md):
+# Phase 1 demo (runs, but never verified end-to-end by hand — see docs/phase-2/chunk-0-close-phase-1.md).
+# Create dirA/ and dirB/ first; the sender fails with NoSuchFileException if its dir is missing:
 sbt 'run receive --dir dirB --port 9000'
 sbt 'run send --dir dirA --host localhost --port 9000'
 

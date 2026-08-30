@@ -10,7 +10,7 @@ See [`docs/`](docs/) for the full design: [overview](docs/01-overview.md), the [
 
 One process watches a directory and streams changed files over plaintext TCP to another process, which writes them to its own directory. Handles **create** and **modify**; delete and rename are deferred to Phase 2. Sync is one-way only (sender → receiver) for now.
 
-> ⚠️ **The demo below does not currently run.** The CLI's send branch reads the *receive* subcommand's options, so it fails at startup. Watching is also top-level only — files in subdirectories are never picked up. Both are fixed in [chunk 0](docs/phase-2/chunk-0-close-phase-1.md) of Phase 2.
+> ⚠️ **The demo below has never been verified end-to-end by hand.** It does start: the CLI's send branch reads the *receive* subcommand's options, but both subcommands declare `--dir` and `--port` identically, so scallop returns the right value anyway — a latent bug rather than a startup failure. Create `dirA/` and `dirB/` before running, or the sender dies with `NoSuchFileException`. Watching is top-level only — files in subdirectories are never picked up. Both are addressed in [chunk 0](docs/phase-2/chunk-0-close-phase-1.md) of Phase 2.
 
 Everything else from the roadmap — bidirectional sync, vector clocks, the CRDT merge, persistence, gossip discovery, encryption, NAT traversal — is still ahead. See [`docs/02-plan.md`](docs/02-plan.md) for what comes next.
 
