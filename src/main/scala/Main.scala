@@ -33,9 +33,9 @@ object Main extends StrictLogging{
         logger.info("Starting receiver....")
         Receiver.run(dirA, port = conf.receive.port())
       case Some(conf.send) =>
-        val dirB = conf.receive.dir()
+        val dirB = conf.send.dir()
         logger.info("Starting sender....")
-        Sender.run(dirB,  host = conf.send.host(), port = conf.receive.port())
+        Sender.run(dirB,  host = conf.send.host(), port = conf.send.port())
       case _ => println("no subcommand")
     }
   }

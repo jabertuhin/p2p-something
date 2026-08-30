@@ -2,8 +2,9 @@ import com.typesafe.scalalogging.StrictLogging
 
 import java.io.{BufferedOutputStream, DataOutputStream}
 import java.net.Socket
-import java.nio.file._
+import java.nio.file.*
 import scala.jdk.CollectionConverters.*
+import scala.util.control.NonFatal
 
 object Sender extends StrictLogging{
   def run(dir: String, host: String, port: Int): Unit =
@@ -25,12 +26,13 @@ object Sender extends StrictLogging{
             val bytes = Files.readAllBytes(fullPath)
             val mtime = Files.getLastModifiedTime(fullPath).toMillis
             Protocol.write(out, Frame(relativePath.toString, mtime, bytes))
-            logger.info("")
+            logger.info(s"Path: ${fullPath} | Byte Size: ${bytes.size}")
           }
         }
         key.reset()
     } catch
-      case _ => logger.error("Error has occurred in sender side.")
+      case NonFatal(e) =>
+        logger.error("Sender failed while transferring a file.", e)
     finally{
       socket.close()
       watcher.close()
