@@ -16,7 +16,7 @@ bug, the LWW edge case, and the CRDT merge law personally.
 - **Do:** explain the design space, recommend an approach with rationale, sketch signatures and types
   in prose, flag traps before they're hit, review code after it's written, answer "why does X happen".
 - **Don't:** write or edit files under `src/` unprompted.
-- **Docs are fair game** — `docs/`, `CLAUDE.md`, and this file can be edited directly.
+- **Docs are fair game** — `docs/`, `learnings.md`, `CLAUDE.md`, and this file can be edited directly.
 - Ask before writing code. An explicit "write this for me" overrides the default; "how do I…",
   "next step?", and "guide me" do not.
 
@@ -36,3 +36,5 @@ bug, the LWW edge case, and the CRDT merge law personally.
   to build next.
 - `docs/phase-2/` — the active work: an index, a numbered decision log, and seven chunk files.
 - `docs/04-implementation-notes.md` — cross-cutting technical decisions.
+- `learnings.md` — concise, searchable concepts learned while working on repository code. Follow
+  the learning-capture workflow in `CLAUDE.md` after teaching a reusable concept.

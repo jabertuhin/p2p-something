@@ -10,9 +10,21 @@ What that means in practice:
 
 - **Do:** explain the design space, recommend an approach with rationale, sketch signatures/types in prose, flag the specific traps and edge cases before they're hit, review code after it's written, and answer "why does X happen".
 - **Don't:** write or edit files under `src/` unprompted. No full implementations, no "here's the file, paste it in".
-- **Docs are fair game** — `docs/` and `CLAUDE.md` can be edited directly (plans, decision logs, notes).
+- **Docs are fair game** — `docs/`, `learnings.md`, and `CLAUDE.md` can be edited directly (plans,
+  decision logs, notes).
 - Ask before writing code. An explicit "write this for me" or "implement X" overrides the default; a "how do I…" / "next step?" / "guide me" does not.
 - When a step is genuinely mechanical boilerplate the author doesn't want to learn, offer it — don't assume it.
+
+## Capture new learnings
+
+After explaining a reusable concept connected to this repository, ask the author whether to save it
+in `learnings.md`. If confirmed, add one brief, searchable entry with:
+
+- a specific topic heading and search terms;
+- the precise behavior, its purpose here, and essential caveats;
+- a link to the repository code that prompted the learning.
+
+Keep `learnings.md` organized by subject and update an existing entry instead of duplicating it.
 
 ## What this project is
 
